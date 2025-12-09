@@ -1,31 +1,45 @@
-from fastapi import FastAPI, UploadFile, File
-from fastapi.responses import JSONResponse
+from fastapi import FastAPI
+from fastapi.responses import StreamingResponse
 from ultralytics import YOLO
-import numpy as np
 import cv2
 
 app = FastAPI()
 
-# Load model
-model = YOLO("weights/best.pt")
+# Load helmet-only model
+model = YOLO("weights/helmet.pt")  # class: helmet only
 
-@app.post("/detect")
-async def detect(file: UploadFile = File(...)):
-    # Read image
-    image_bytes = await file.read()
-    npimg = np.frombuffer(image_bytes, np.uint8)
-    img = cv2.imdecode(npimg, cv2.IMREAD_COLOR)
 
-    # Run inference
-    results = model(img)
+def generate_frames():
+    # GANTI 1 → untuk webcam eksternal (biasanya benar)
+    cap = cv2.VideoCapture(0)   # kalau tidak muncul, coba 0 atau 2
 
-    # Convert detections into json
-    detections = []
-    for box in results[0].boxes:
-        detections.append({
-            "class": int(box.cls[0]),
-            "confidence": float(box.conf[0]),
-            "bbox": box.xyxy.tolist()
-        })
+    if not cap.isOpened():
+        print("❌ Webcam tidak ditemukan!")
+        return
 
-    return JSONResponse(content={"detections": detections})
+    while True:
+        ret, frame = cap.read()
+        if not ret:
+            break
+        frame = cv2.flip(frame, 1)
+        # YOLO inference
+        results = model(frame)
+        annotated = results[0].plot()  # gambar hasil dengan bounding box
+
+        # Encode JPG
+        _, buffer = cv2.imencode('.jpg', annotated)
+        frame_bytes = buffer.tobytes()
+
+        # Streaming ke browser (MJPEG stream)
+        yield (
+            b"--frame\r\n"
+            b"Content-Type: image/jpeg\r\n\r\n" + frame_bytes + b"\r\n"
+        )
+
+
+@app.get("/video")
+def video_feed():
+    return StreamingResponse(
+        generate_frames(),
+        media_type="multipart/x-mixed-replace; boundary=frame"
+    )
