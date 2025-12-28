@@ -5,9 +5,6 @@ import numpy as np
 
 st.set_page_config(page_title="Helmet Detection", layout="wide")
 
-# ================================
-# CUSTOM STYLING (ANIMASI + GLASS)
-# ================================
 st.markdown("""
 <style>
 
@@ -92,25 +89,15 @@ h1 {
 </style>
 """, unsafe_allow_html=True)
 
-
-# ================================
-# TITLE
-# ================================
-st.markdown("<h1>🪖</h1>", unsafe_allow_html=True)
+st.markdown("<h1>Helmet Detection</h1>", unsafe_allow_html=True)
 
 
-# URL BACKEND
 BACKEND_VIDEO_URL = "http://localhost:8000/video"
 
-
-# STATE
 if "run" not in st.session_state:
     st.session_state.run = False
 
 
-# ================================
-# VIDEO DISPLAY (CENTERED)
-# ================================
 st.markdown("<div class='video-wrapper'>", unsafe_allow_html=True)
 st.markdown("<div class='video-box'>", unsafe_allow_html=True)
 
@@ -120,9 +107,6 @@ st.markdown("</div>", unsafe_allow_html=True)
 st.markdown("</div>", unsafe_allow_html=True)
 
 
-# ================================
-# TOGGLE BUTTON (START / STOP)
-# ================================
 button_label = "⏹ Stop Detection" if st.session_state.run else "▶ Start Detection"
 
 if st.button(button_label, key="toggle", help="Start/Stop webcam detection", args=None):
@@ -132,10 +116,6 @@ if st.button(button_label, key="toggle", help="Start/Stop webcam detection", arg
 status = "🟢 Running" if st.session_state.run else "🔴 Stopped"
 st.markdown(f"<p class='status-text'>{status}</p>", unsafe_allow_html=True)
 
-
-# ================================
-# STREAM READER
-# ================================
 def read_mjpeg_stream(url):
     stream = requests.get(url, stream=True)
     buff = bytes()
@@ -151,9 +131,6 @@ def read_mjpeg_stream(url):
             yield frame
 
 
-# ================================
-# RENDER STREAM
-# ================================
 if st.session_state.run:
     for frame in read_mjpeg_stream(BACKEND_VIDEO_URL):
         FRAME_WINDOW.image(frame)
